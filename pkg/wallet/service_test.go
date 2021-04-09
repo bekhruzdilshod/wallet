@@ -1,8 +1,10 @@
 package wallet
 
 import (
-	"testing"
 	"reflect"
+	"testing"
+
+	"github.com/bekhruzdilshod/wallet/pkg/types"
 )
 
 // Успешная регистрация аккаунта
@@ -30,11 +32,9 @@ func TestService_RegisterAccount_alreadyRegistered(t *testing.T) {
 	}
 }
 
-
-
 func TestService_FindAccountByID_found(t *testing.T) {
 	s := &Service{}
-	
+
 	acc, err := s.RegisterAccount("+992900801441")
 	if err != nil {
 		t.Errorf("%v", err)
@@ -48,9 +48,8 @@ func TestService_FindAccountByID_found(t *testing.T) {
 	if !reflect.DeepEqual(found, acc) {
 		t.Error("Doesn't work!")
 	}
-	
-}
 
+}
 
 func TestService_FindAccountByID_notFound(t *testing.T) {
 	s := &Service{}
@@ -59,5 +58,37 @@ func TestService_FindAccountByID_notFound(t *testing.T) {
 	if err == nil {
 		t.Errorf("%v", found.ID)
 	}
-	
+
+}
+
+func TestService_Reject_notFound(t *testing.T) {
+	s := &Service{}
+	_, err := s.FindPaymentByID("1240123")
+	if err == nil {
+		t.Error("Oops! Something went wrong...")
+	}
+}
+
+func TestService_Reject_found(t *testing.T) {
+
+	expectedBalanceAfterReject := types.Money(100)
+
+	s := &Service{}
+
+	account, err := s.RegisterAccount("+992900801441")
+	if err != nil {
+		t.Errorf("ERROR: %v", err)
+	}
+
+	s.Deposit(account.ID, 100)
+	payment, err := s.Pay(account.ID, 10, "fun")
+	if err != nil {
+		t.Errorf("%v", err)
+	}
+
+	s.Reject(payment.ID)
+
+	if payment.Status != types.PaymentStatusFail || account.Balance != expectedBalanceAfterReject {
+		t.Error("Something went wrong... Oops!")
+	}
 }

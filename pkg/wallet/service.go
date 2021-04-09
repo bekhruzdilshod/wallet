@@ -12,6 +12,7 @@ var ErrPhoneRegistered = errors.New("phone already registered")
 var ErrAmountMustBePositive = errors.New("amount must be greated than zero")
 var ErrAccountNotFound = errors.New("account not found")
 var ErrNotEnoughBalance = errors.New("not enough balance")
+var ErrPaymentNotFound = errors.New("payment not found")
 
 
 type Service struct {
@@ -119,4 +120,41 @@ func (s *Service) FindAccountByID(accountID int64) (*types.Account, error) {
 
 	return account, nil
 
+}
+
+// FindPaymentByID осуществляет поиск платежа в хранилище Service по уникальному ID
+func (s *Service) FindPaymentByID(paymentID string) (*types.Payment, error) {
+	
+	var payment *types.Payment
+	for _, pm := range s.payments {
+		if paymentID == pm.ID {
+			payment = pm
+			break
+		}
+	}
+
+	if payment == nil {
+		return nil, ErrPaymentNotFound
+	}
+
+	return payment, nil
+}
+
+
+// Reject Возвращает сумму совершенного платежа на счет плательщика и отменяет сам платеж
+func (s *Service) Reject(paymentID string) error {
+
+	payment, err := s.FindPaymentByID(paymentID)
+	if err != nil || payment == nil {
+		return ErrPaymentNotFound
+	}
+	
+	accountToRefund, err := s.FindAccountByID(payment.AccountID)
+	if err != nil {
+		return ErrAccountNotFound
+	}
+
+	payment.Status = types.PaymentStatusFail
+	accountToRefund.Balance += payment.Amount
+	return nil
 }
