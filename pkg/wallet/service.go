@@ -13,6 +13,7 @@ var ErrAmountMustBePositive = errors.New("amount must be greated than zero")
 var ErrAccountNotFound = errors.New("account not found")
 var ErrNotEnoughBalance = errors.New("not enough balance")
 var ErrPaymentNotFound = errors.New("payment not found")
+var ErrPaymentNotCreated = errors.New("can't create payment")
 
 
 type Service struct {
@@ -67,6 +68,7 @@ func (s *Service) Deposit(accountID int64, amount types.Money) error {
 }
 
 
+// s.Pay осуществляет оплату по указанной категории и списывает средства с аккаунта пользователя
 func (s *Service) Pay(accountID int64, amount types.Money, category types.PaymentCategory) (*types.Payment, error) {
 	if amount <= 0 {
 		return nil, ErrAmountMustBePositive
@@ -129,15 +131,11 @@ func (s *Service) FindPaymentByID(paymentID string) (*types.Payment, error) {
 	for _, pm := range s.payments {
 		if paymentID == pm.ID {
 			payment = pm
-			break
+			return payment, nil
 		}
 	}
 
-	if payment == nil {
-		return nil, ErrPaymentNotFound
-	}
-
-	return payment, nil
+	return nil, ErrPaymentNotFound
 }
 
 
@@ -157,4 +155,23 @@ func (s *Service) Reject(paymentID string) error {
 	payment.Status = types.PaymentStatusFail
 	accountToRefund.Balance += payment.Amount
 	return nil
+}
+
+
+// s.Repeat позволяет повторить платеж (меняется только ID)
+func (s *Service) Repeat(paymentID string) (*types.Payment, error) {
+
+	// Ищем платеж по его ID
+	payment, err := s.FindPaymentByID(paymentID)
+	if err != nil {
+		return nil, ErrPaymentNotFound
+	}
+
+	new_payment, err := s.Pay(payment.AccountID, payment.Amount, payment.Category)
+	if err != nil {
+		return nil, ErrPaymentNotCreated
+	}
+
+	return new_payment, nil
+
 }
