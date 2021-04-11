@@ -259,3 +259,84 @@ func TestService_Repeat_paymentNotFound(t *testing.T) {
 
 
 }
+
+
+func TestService_FavoritePayment_success(t *testing.T) {
+	s := newTestService()
+	
+	account, err := s.addAccountWithBalance("+992900801441", 1000)
+	if err != nil {
+		t.Errorf("FavoritePayment(): Can't create accout with balance, error = %v", err)
+	}
+
+	payment, err := s.Pay(account.ID, 100, "mobile")
+	if err != nil {
+		t.Errorf("FavoritePayment(): Can't create payment, error = %v", err)
+	}
+
+	favorite, err := s.FavoritePayment(payment.ID, "MegaFon")
+	if err != nil || favorite == nil {
+		t.Errorf("FavoritePayment(): Can't create favorite, error = %v, favorite = %v", err, favorite)
+	}
+}
+
+
+func TestService_FavoritePayment_paymentNotFound(t *testing.T) {
+	s := newTestService()
+	
+	account, err := s.addAccountWithBalance("+992900801441", 1000)
+	if err != nil {
+		t.Errorf("FavoritePayment(): Can't create accout with balance, error = %v, account = %v", err, account)
+	}
+
+	favorite, err := s.FavoritePayment(uuid.New().String(), "MegaFon")
+	if err == nil || favorite != nil {
+		t.Errorf("FavoritePayment(): Can't create favorite, error = %v, favorite = %v", err, favorite)
+	}
+}
+
+
+func TestService_PayFromFavorite_success(t *testing.T) {
+	s := newTestService()
+	
+	account, err := s.addAccountWithBalance("+992900801441", 1000)
+	if err != nil {
+		t.Errorf("PayFromFavorite(): Can't create accout with balance, error = %v", err)
+	}
+
+	payment, err := s.Pay(account.ID, 100, "mobile")
+	if err != nil {
+		t.Errorf("PayFromFavorite(): Can't create payment, error = %v", err)
+	}
+
+	favorite, err := s.FavoritePayment(payment.ID, "MegaFon")
+	if err != nil || favorite == nil {
+		t.Errorf("PayFromFavorite(): Can't create favorite, error = %v, favorite = %v", err, favorite)
+	}
+
+	favPayment, err := s.PayFromFavorite(favorite.ID)
+	if err != nil {
+		t.Errorf("PayFromFavorite(): Can't pay from favorite, error = %v, favPayment = %v", err, favPayment)
+	}
+
+}
+
+func TestService_PayFromFavorite_favoriteNotFound(t *testing.T) {
+	s := newTestService()
+	
+	account, err := s.addAccountWithBalance("+992900801441", 1000)
+	if err != nil {
+		t.Errorf("PayFromFavorite(): Can't create accout with balance, error = %v", err)
+	}
+
+	payment, err := s.Pay(account.ID, 100, "mobile")
+	if err != nil {
+		t.Errorf("PayFromFavorite(): Can't create payment, error = %v, payment = %v", err, payment)
+	}
+
+	favPayment, err := s.PayFromFavorite(uuid.New().String())
+	if err == nil || favPayment != nil {
+		t.Errorf("PayFromFavorite(): Error expected, got payment, error = %v, payment = %v", err, favPayment)
+	}
+
+}
